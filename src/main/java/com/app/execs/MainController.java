@@ -33,18 +33,16 @@ public class MainController {
 		hs.setAttribute("site", name.toUpperCase());
 		response.sendRedirect(Utils.landProcess(name.toUpperCase(), hs.getId()));
 	}
-
+	
+	// This controller handles authorization code sent by authentication server
+	// (OAuth server).
+	// code is authorization_code. If it is not present this means that requested
+	// SSO is google's so it will
+	// take access_code if it is sent in redirected controller.
 	@GetMapping("general_oauth_redirect")
 	public void authoris(@RequestParam(value = "code", required = false) String code,
 			@RequestParam(value = "state", required = false) String state, HttpServletResponse response, HttpSession hs)
 			throws IOException {
-		// This controller handles authorization code sent by authentication server
-		// (OAuth server).
-		// code is authorization_code. If it is not present this means that requested
-		// SSO is google's so it will
-		// take access_code if it is sent in redirected controller.
-		System.out.println("after redirect");
-		System.out.println("in redirect from resource server hs="+hs.getId());
 		Optional<String> codeOptional = Optional.ofNullable(code);
 		codeOptional.ifPresent(code1 -> {
 			Map<String, String> params = new HashMap<>();
@@ -63,10 +61,8 @@ public class MainController {
 	@ResponseBody
 	public void authorised(@RequestParam(value = "access_token", required = false) String access_token,
 			HttpServletResponse response, HttpServletRequest request, HttpSession hs) throws IOException {
-		
 		if (access_token != null) {
 			System.out.println(Utils.fetchData(hs.getAttribute("site").toString(), access_token));
-			System.out.println("asdhashd");
 		} 
 		else 
 		{
@@ -74,8 +70,7 @@ public class MainController {
 					.getAttribute("access_response_" + hs.getAttribute("site").toString())).getBody();
 			String result = Utils.fetchData(hs.getAttribute("site").toString(),
 					Utils.processToken(hs.getAttribute("site").toString(), x));
-			System.out.println(result);
-			System.out.println("in spring redirect hs="+hs.getId());
+			//System.out.println(result);
 			hs.setAttribute("result", result);
 		}
 		response.sendRedirect("http://localhost:3000/data");
@@ -83,13 +78,10 @@ public class MainController {
 
 	@GetMapping("fetch")
 	@ResponseBody
-	@CrossOrigin(origins = "*", allowedHeaders = "*")
+	@CrossOrigin(origins = "http://localhost:3000", allowCredentials="")
 	public String testing(HttpSession hs) {
-		if(hs.getAttribute("result") == null)
-			System.out.println("null");
-		//System.out.println(hs.getAttribute("result").toString());
-		System.out.println("in fetch data hs="+hs.getId());
-		return hs.getAttribute("result").toString();
+		String obj = hs.getAttribute("result").toString();
+		return obj.substring(obj.indexOf('{'), obj.lastIndexOf('}')+1);
 	}
 
 }
